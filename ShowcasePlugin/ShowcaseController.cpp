@@ -34,14 +34,14 @@ ShowcaseController::ShowcaseController(void)
 	ZeroMemory(&m_mouseMessage, sizeof(m_mouseMessage));
 	m_mouseMessage.dragButton = DragNONE;
 	
-	//MakeHook(NULL);
+	MakeHook(NULL);
 	m_hKeyInputWnd	= NULL;
 }
 
 ShowcaseController::~ShowcaseController(void)
 {
 	ModKeyUp();
-	//UnHook();
+	UnHook();
 }
 
 /**
@@ -192,6 +192,8 @@ void ShowcaseController::Execute(LPCSTR szCommand, double deltaX, double deltaY)
 	HWND tmpWnd = GetForegroundWindow();
 	if (tmpWnd != m_hTargetTopWnd) {
 		m_hTargetTopWnd = tmpWnd;
+		Sleep(0);
+		return;
 	}
 
 	// 実際に仮想キー・仮想マウス操作を行う子ウィンドウの取得
@@ -369,17 +371,14 @@ BOOL ShowcaseController::IsModKeysDown(void)
 		}
 
 		if (m_ctrl && !IsKeyDown(VK_CONTROL)) {
-			OutputDebugString(_T("Control RETRY\n"));
 			sleepInterval *= 2;
 			continue;
 		}
-		if (m_alt && !IsKeyDown(VK_MENU)) {
-			OutputDebugString(_T("Alt RETRY\n"));
+		if (GetKeyState(VK_MENU) > 0 || (m_alt && !IsKeyDown(VK_MENU))) {
 			sleepInterval *= 2;
 			continue;
 		}
 		if (m_shift && !IsKeyDown(VK_SHIFT)) {
-			OutputDebugString(_T("Shift RETRY\n"));
 			sleepInterval *= 2;
 			continue;
 		}
@@ -397,9 +396,7 @@ BOOL ShowcaseController::IsModKeysDown(void)
 
 void ShowcaseController::ModKeyDown(void)
 {
-	OutputDebugString(_T("ModKeyDown\n"));
 	if (!m_bSyskeyDown) {
-		OutputDebugString(_T("TRY\n"));
 		DWORD dwBuf = 0;
 		HWND hForeground = GetForegroundWindow();
 
@@ -428,19 +425,15 @@ void ShowcaseController::ModKeyDown(void)
 
 		m_bSyskeyDown = IsModKeysDown();
 		if (!m_bSyskeyDown) {
-			OutputDebugString(_T("TIMEOUT\n"));
 			TCHAR szError[BUFFER_SIZE];
 			_stprintf_s(szError, _countof(szError), _T("修飾キーが押されませんでした[タイムアウト]。") );
 			LogDebugMessage(Log_Error, szError);
 		}
-	} else {
-		OutputDebugString(_T("PRESSED\n"));
 	}
 }
 
 void ShowcaseController::ModKeyUp(void)
 {
-	OutputDebugString(_T("ModKeyUp\n"));
 	if (m_bSyskeyDown) {
 		if (!SetForegroundWindow(m_hTargetTopWnd)) {
 			OutputDebugString(_T("SetForegroundWindow -> FALSE\n"));

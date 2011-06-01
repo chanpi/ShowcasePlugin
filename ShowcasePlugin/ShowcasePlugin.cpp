@@ -221,9 +221,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			nBytes = recv(socketHandler, buffer, _countof(buffer), 0);
 			if (nBytes == SOCKET_ERROR) {
 				_stprintf_s(szError, _countof(szError), _T("recv() : %d <ShowcasePlugin>"), WSAGetLastError());
-				ReportError(szError);
+				LogDebugMessage(Log_Error, szError);
+				//ReportError(szError);
 				break;
-
 			}
 
 			int scanCount = AnalyzeMessage(buffer, szCommand, _countof(szCommand), &deltaX, &deltaY, cTermination);
