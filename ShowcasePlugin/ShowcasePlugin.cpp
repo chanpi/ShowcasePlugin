@@ -230,6 +230,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (scanCount == 3) {
 				counter = 0;
 				controller.Execute(szCommand, deltaX, deltaY);
+				Sleep(1);
 				doCount = TRUE;
 
 			} else if (scanCount == 1) {
