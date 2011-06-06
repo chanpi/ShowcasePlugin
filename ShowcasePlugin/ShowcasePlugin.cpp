@@ -240,9 +240,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			int scanCount = AnalyzeMessage(&packet, &hTargetWnd, szCommand, _countof(szCommand), &deltaX, &deltaY, cTermination);
 			if (scanCount == 3) {
 				counter = 0;
+<<<<<<< HEAD
 
 				ShowWindow(hWnd, SW_SHOW);
 				UpdateWindow(hWnd);
+=======
+>>>>>>> c802336dba99f66a6c00a13386113888fad53f21
 				controller.Execute(hTargetWnd, szCommand, deltaX, deltaY);
 				Sleep(1);
 				doCount = TRUE;

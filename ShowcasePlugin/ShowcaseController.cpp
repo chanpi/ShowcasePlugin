@@ -270,11 +270,17 @@ void ShowcaseController::TumbleExecute(int deltaX, int deltaY)
 
 		AdjustCursorPos();
 		m_mouseMessage.dragStartPos		= m_currentPos;
+<<<<<<< HEAD
 		m_mouseMessage.dragEndPos.x		= m_currentPos.x + deltaX;
 		m_mouseMessage.dragEndPos.y		= m_currentPos.y + deltaY;
 		//m_currentPos.x					+= deltaX;
 		//m_currentPos.y					+= deltaY;
 		//m_mouseMessage.dragEndPos		= m_currentPos;
+=======
+		m_currentPos.x					+= deltaX;
+		m_currentPos.y					+= deltaY;
+		m_mouseMessage.dragEndPos		= m_currentPos;
+>>>>>>> c802336dba99f66a6c00a13386113888fad53f21
 
 		VMMouseClick(&m_mouseMessage, FALSE);
 	}
@@ -313,11 +319,17 @@ void ShowcaseController::TrackExecute(int deltaX, int deltaY)
 
 		AdjustCursorPos();
 		m_mouseMessage.dragStartPos		= m_currentPos;
+<<<<<<< HEAD
 		m_mouseMessage.dragEndPos.x		= m_currentPos.x + deltaX;
 		m_mouseMessage.dragEndPos.y		= m_currentPos.y + deltaY;
 		//m_currentPos.x					+= deltaX;
 		//m_currentPos.y					+= deltaY;
 		//m_mouseMessage.dragEndPos		= m_currentPos;
+=======
+		m_currentPos.x					+= deltaX;
+		m_currentPos.y					+= deltaY;
+		m_mouseMessage.dragEndPos		= m_currentPos;
+>>>>>>> c802336dba99f66a6c00a13386113888fad53f21
 
 		VMMouseClick(&m_mouseMessage, FALSE);
 	}
@@ -357,11 +369,17 @@ void ShowcaseController::DollyExecute(int deltaX, int deltaY)
 
 		AdjustCursorPos();
 		m_mouseMessage.dragStartPos		= m_currentPos;
+<<<<<<< HEAD
 		m_mouseMessage.dragEndPos.x		= m_currentPos.x + deltaX;
 		m_mouseMessage.dragEndPos.y		= m_currentPos.y + deltaY;
 		//m_currentPos.x					+= deltaX;
 		//m_currentPos.y					+= deltaY;
 		//m_mouseMessage.dragEndPos		= m_currentPos;
+=======
+		m_currentPos.x					+= deltaX;
+		m_currentPos.y					+= deltaY;
+		m_mouseMessage.dragEndPos		= m_currentPos;
+>>>>>>> c802336dba99f66a6c00a13386113888fad53f21
 
 		VMMouseClick(&m_mouseMessage, FALSE);
 	}
@@ -446,9 +464,12 @@ void ShowcaseController::ModKeyDown(void)
 		if (m_shift) {
 			VMVirtualKeyDown(m_hKeyInputWnd, VK_SHIFT, m_bUsePostMessageToSendKey);
 		}
+<<<<<<< HEAD
 		if (!m_pCursor->SetTransparentCursor()) {
 			LogDebugMessage(Log_Error, _T("透明カーソルへの変更に失敗しています。"));
 		}
+=======
+>>>>>>> c802336dba99f66a6c00a13386113888fad53f21
 		m_bSyskeyDown = IsModKeysDown();
 		//if (!m_bSyskeyDown) {
 		//	TCHAR szError[BUFFER_SIZE];
