@@ -2,9 +2,12 @@
 #include "ShowcaseController.h"
 #include "I4C3DKeysHook.h"
 #include "I4C3DCommon.h"
+#include "I4C3DCursor.h"
 #include "Miscellaneous.h"
 
 static const int BUFFER_SIZE = 256;
+extern const int g_x;
+extern const int g_y;
 
 static BOOL CALLBACK EnumChildProc(HWND hWnd, LPARAM lParam);
 static const PCTSTR g_szChildWindowTitle	= _T("AW_VIEWER");
@@ -27,7 +30,6 @@ ShowcaseController::ShowcaseController(void)
 	m_fDollyRate		= 1;
 	m_bUsePostMessageToSendKey		= FALSE;
 	m_bUsePostMessageToMouseDrag	= TRUE;
-	m_millisecSleepAfterKeyDown		= 30;
 	m_ctrl = m_shift = m_bSyskeyDown = FALSE;
 	m_alt = TRUE;
 
@@ -36,12 +38,15 @@ ShowcaseController::ShowcaseController(void)
 	
 	MakeHook(NULL);
 	m_hKeyInputWnd	= NULL;
+	m_pCursor = new I4C3DCursor;
 }
 
 ShowcaseController::~ShowcaseController(void)
 {
 	ModKeyUp();
 	UnHook();
+	delete m_pCursor;
+	m_pCursor = NULL;
 }
 
 /**
@@ -63,15 +68,17 @@ ShowcaseController::~ShowcaseController(void)
 
 BOOL ShowcaseController::Initialize(LPCSTR szBuffer, char* termination)
 {
-	char tmpCommand[16];
-	char szModKeys[32];
+	char tmpCommand[BUFFER_SIZE] = {0};
+	char szModKeys[BUFFER_SIZE] = {0};
 
 	sscanf_s(szBuffer, g_initCommandFormat, tmpCommand,	sizeof(tmpCommand), szModKeys, sizeof(szModKeys), &m_fTumbleRate, &m_fTrackRate, &m_fDollyRate, termination);
 	if (!m_fTumbleRate) {
 		m_fTumbleRate = 1.0;
-	} else if (!m_fTrackRate){
+	}
+	if (!m_fTrackRate){
 		m_fTrackRate = 1.0;
-	} else if (!m_fDollyRate) {
+	}
+	if (!m_fDollyRate) {
 		m_fDollyRate = 1.0;
 	}
 
@@ -95,7 +102,6 @@ BOOL ShowcaseController::Initialize(LPCSTR szBuffer, char* termination)
  */
 BOOL ShowcaseController::InitializeModifierKeys(PCSTR szModifierKeys)
 {
-	m_ctrl = m_alt = m_shift = m_bSyskeyDown = FALSE;
 	if (_strcmpi(szModifierKeys, "NULL") == 0 || szModifierKeys == NULL) {
 		m_alt = TRUE;
 		AddHookedKeyCode(VK_MENU);
@@ -122,14 +128,14 @@ BOOL ShowcaseController::InitializeModifierKeys(PCSTR szModifierKeys)
 
 		case _T('S'):
 		case _T('s'):
-			AddHookedKeyCode( VK_SHIFT );
 			m_shift = TRUE;
+			AddHookedKeyCode( VK_SHIFT );
 			break;
 
 		case _T('A'):
 		case _T('a'):
-			AddHookedKeyCode( VK_MENU );
 			m_alt = TRUE;
+			AddHookedKeyCode( VK_MENU );
 			break;
 		}
 	} while (pType != NULL);
@@ -140,10 +146,13 @@ BOOL ShowcaseController::InitializeModifierKeys(PCSTR szModifierKeys)
 
 BOOL ShowcaseController::GetTargetChildWnd(void)
 {
+	m_hKeyInputWnd = NULL;
+	m_hMouseInputWnd = NULL;
 	EnumChildWindows(m_hTargetTopWnd, EnumChildProc, (LPARAM)&m_hMouseInputWnd);
 	if (m_hMouseInputWnd == NULL) {
 		return FALSE;
 	}
+
 	m_hKeyInputWnd = m_hMouseInputWnd;
 	return TRUE;
 }
@@ -161,39 +170,38 @@ BOOL ShowcaseController::CheckTargetState(void)
 		LogDebugMessage(Log_Error, _T("マウス入力ウィンドウが取得できません。<ShowcaseController::CheckTargetState>"));
 
 	} else {
-		// ターゲットウィンドウの位置のチェック
-		POINT tmpCurrentPos = m_currentPos;
-		ClientToScreen(m_hMouseInputWnd, &tmpCurrentPos);
-
-		RECT windowRect;
-		GetWindowRect(m_hMouseInputWnd, &windowRect);
-		if (WindowFromPoint(tmpCurrentPos) != m_hMouseInputWnd ||
-			tmpCurrentPos.x < windowRect.left+200 || windowRect.right-200 < tmpCurrentPos.x ||
-			tmpCurrentPos.y < windowRect.top+200 || windowRect.bottom-200 < tmpCurrentPos.y) {
-				if (m_mouseMessage.dragButton != DragNONE) {
-					VMMouseClick(&m_mouseMessage, TRUE);
-					m_mouseMessage.dragButton = DragNONE;
-				}
-
-				RECT rect;
-				GetClientRect(m_hMouseInputWnd, &rect);
-				m_currentPos.x = rect.left + (rect.right - rect.left) / 2;
-				m_currentPos.y = rect.top + (rect.bottom - rect.top) / 2;
-		}
 		return TRUE;
 	}
 
 	return FALSE;
 }
 
-
-void ShowcaseController::Execute(LPCSTR szCommand, double deltaX, double deltaY)
+void ShowcaseController::AdjustCursorPos(void)
 {
-	HWND tmpWnd = GetForegroundWindow();
-	if (tmpWnd != m_hTargetTopWnd) {
-		m_hTargetTopWnd = tmpWnd;
-		return;
+	// ターゲットウィンドウの位置のチェック
+	POINT tmpCurrentPos = m_currentPos;
+	ClientToScreen(m_hMouseInputWnd, &tmpCurrentPos);
+
+	RECT windowRect;
+	GetWindowRect(m_hMouseInputWnd, &windowRect);
+	if (WindowFromPoint(tmpCurrentPos) != m_hMouseInputWnd ||
+		tmpCurrentPos.x < windowRect.left+200 || windowRect.right-200 < tmpCurrentPos.x ||
+		tmpCurrentPos.y < windowRect.top+200 || windowRect.bottom-200 < tmpCurrentPos.y) {
+			if (m_mouseMessage.dragButton != DragNONE) {
+				VMMouseClick(&m_mouseMessage, TRUE);
+				m_mouseMessage.dragButton = DragNONE;
+			}
+
+			RECT rect;
+			GetClientRect(m_hMouseInputWnd, &rect);
+			m_currentPos.x = rect.left + (rect.right - rect.left) / 2;
+			m_currentPos.y = rect.top + (rect.bottom - rect.top) / 2;
 	}
+}
+
+void ShowcaseController::Execute(HWND hWnd, LPCSTR szCommand, double deltaX, double deltaY)
+{
+	m_hTargetTopWnd = hWnd;
 
 	// 実際に仮想キー・仮想マウス操作を行う子ウィンドウの取得
 	if (!GetTargetChildWnd()) {
@@ -201,6 +209,8 @@ void ShowcaseController::Execute(LPCSTR szCommand, double deltaX, double deltaY)
 	}
 
 	//ShowWindow(m_hTargetParentWnd, SW_SHOWMAXIMIZED);
+
+	SetCursorPos(51, 51);
 
 	if (_strcmpi(szCommand, COMMAND_TUMBLE) == 0) {
 		ModKeyDown();
@@ -211,13 +221,13 @@ void ShowcaseController::Execute(LPCSTR szCommand, double deltaX, double deltaY)
 	} else if (_strcmpi(szCommand, COMMAND_TRACK) == 0) {
 		ModKeyDown();
 		if (m_bSyskeyDown) {
-			TrackExecute((INT)(deltaX * m_fTumbleRate), (INT)(deltaY * m_fTumbleRate));
+			TrackExecute((INT)(deltaX * m_fTrackRate), (INT)(deltaY * m_fTrackRate));
 		}
 
 	} else if (_strcmpi(szCommand, COMMAND_DOLLY) == 0) {
 		ModKeyDown();
 		if (m_bSyskeyDown) {
-			DollyExecute((INT)(deltaX * m_fTumbleRate), (INT)(deltaY * m_fTumbleRate));
+			DollyExecute((INT)(deltaX * m_fDollyRate), (INT)(deltaY * m_fDollyRate));
 		}
 
 	} else {
@@ -246,10 +256,6 @@ void ShowcaseController::TumbleExecute(int deltaX, int deltaY)
 	}
 	m_mouseMessage.bUsePostMessage	= m_bUsePostMessageToMouseDrag;
 	m_mouseMessage.hTargetWnd		= m_hMouseInputWnd;
-	m_mouseMessage.dragStartPos		= m_currentPos;
-	m_currentPos.x					+= deltaX;
-	m_currentPos.y					+= deltaY;
-	m_mouseMessage.dragEndPos		= m_currentPos;
 
 	m_mouseMessage.uKeyState		= MK_LBUTTON;
 	if (m_ctrl) {
@@ -261,8 +267,23 @@ void ShowcaseController::TumbleExecute(int deltaX, int deltaY)
 
 	if (m_mouseMessage.dragButton != LButtonDrag) {
 		m_mouseMessage.dragButton = LButtonDrag;
+
+		AdjustCursorPos();
+		m_mouseMessage.dragStartPos		= m_currentPos;
+		m_mouseMessage.dragEndPos.x		= m_currentPos.x + deltaX;
+		m_mouseMessage.dragEndPos.y		= m_currentPos.y + deltaY;
+		//m_currentPos.x					+= deltaX;
+		//m_currentPos.y					+= deltaY;
+		//m_mouseMessage.dragEndPos		= m_currentPos;
+
 		VMMouseClick(&m_mouseMessage, FALSE);
 	}
+
+	m_mouseMessage.dragStartPos		= m_currentPos;
+	m_currentPos.x					+= deltaX;
+	m_currentPos.y					+= deltaY;
+	m_mouseMessage.dragEndPos		= m_currentPos;
+
 	VMMouseMove(&m_mouseMessage);
 }
 
@@ -279,10 +300,6 @@ void ShowcaseController::TrackExecute(int deltaX, int deltaY)
 	}
 	m_mouseMessage.bUsePostMessage	= m_bUsePostMessageToMouseDrag;
 	m_mouseMessage.hTargetWnd		= m_hMouseInputWnd;
-	m_mouseMessage.dragStartPos		= m_currentPos;
-	m_currentPos.x					+= deltaX;
-	m_currentPos.y					+= deltaY;
-	m_mouseMessage.dragEndPos		= m_currentPos;
 
 	m_mouseMessage.uKeyState		= MK_MBUTTON;
 	if (m_ctrl) {
@@ -293,8 +310,23 @@ void ShowcaseController::TrackExecute(int deltaX, int deltaY)
 	}
 	if (m_mouseMessage.dragButton != MButtonDrag) {
 		m_mouseMessage.dragButton = MButtonDrag;
+
+		AdjustCursorPos();
+		m_mouseMessage.dragStartPos		= m_currentPos;
+		m_mouseMessage.dragEndPos.x		= m_currentPos.x + deltaX;
+		m_mouseMessage.dragEndPos.y		= m_currentPos.y + deltaY;
+		//m_currentPos.x					+= deltaX;
+		//m_currentPos.y					+= deltaY;
+		//m_mouseMessage.dragEndPos		= m_currentPos;
+
 		VMMouseClick(&m_mouseMessage, FALSE);
 	}
+
+	m_mouseMessage.dragStartPos		= m_currentPos;
+	m_currentPos.x					+= deltaX;
+	m_currentPos.y					+= deltaY;
+	m_mouseMessage.dragEndPos		= m_currentPos;
+
 	VMMouseMove(&m_mouseMessage);
 }
 
@@ -312,10 +344,6 @@ void ShowcaseController::DollyExecute(int deltaX, int deltaY)
 	}
 	m_mouseMessage.bUsePostMessage	= m_bUsePostMessageToMouseDrag;
 	m_mouseMessage.hTargetWnd		= m_hMouseInputWnd;
-	m_mouseMessage.dragStartPos		= m_currentPos;
-	m_currentPos.x					+= deltaX;
-	m_currentPos.y					+= deltaY;
-	m_mouseMessage.dragEndPos		= m_currentPos;
 
 	m_mouseMessage.uKeyState		= MK_RBUTTON;
 	if (m_ctrl) {
@@ -326,8 +354,23 @@ void ShowcaseController::DollyExecute(int deltaX, int deltaY)
 	}
 	if (m_mouseMessage.dragButton != RButtonDrag) {
 		m_mouseMessage.dragButton = RButtonDrag;
+
+		AdjustCursorPos();
+		m_mouseMessage.dragStartPos		= m_currentPos;
+		m_mouseMessage.dragEndPos.x		= m_currentPos.x + deltaX;
+		m_mouseMessage.dragEndPos.y		= m_currentPos.y + deltaY;
+		//m_currentPos.x					+= deltaX;
+		//m_currentPos.y					+= deltaY;
+		//m_mouseMessage.dragEndPos		= m_currentPos;
+
 		VMMouseClick(&m_mouseMessage, FALSE);
 	}
+
+	m_mouseMessage.dragStartPos		= m_currentPos;
+	m_currentPos.x					+= deltaX;
+	m_currentPos.y					+= deltaY;
+	m_mouseMessage.dragEndPos		= m_currentPos;
+
 	VMMouseMove(&m_mouseMessage);
 }
 
@@ -357,7 +400,7 @@ void ShowcaseController::DollyExecute(int deltaX, int deltaY)
  */
 BOOL ShowcaseController::IsModKeysDown(void)
 {
-	const int retryCount = 3/*12*/;
+	const int retryCount = 3;
 	int sleepInterval = 1;
 
 	int i = 0;
@@ -373,7 +416,7 @@ BOOL ShowcaseController::IsModKeysDown(void)
 			sleepInterval *= 2;
 			continue;
 		}
-		if (GetKeyState(VK_MENU) > 0 || (m_alt && !IsKeyDown(VK_MENU))) {
+		if (m_alt && !IsKeyDown(VK_MENU)) {
 			sleepInterval *= 2;
 			continue;
 		}
@@ -394,38 +437,24 @@ BOOL ShowcaseController::IsModKeysDown(void)
 void ShowcaseController::ModKeyDown(void)
 {
 	if (!m_bSyskeyDown) {
-		DWORD dwBuf = 0;
-		HWND hForeground = GetForegroundWindow();
-
-		DWORD dwThreadId = GetWindowThreadProcessId(hForeground, NULL);
-		DWORD dwTargetThreadId = GetWindowThreadProcessId(m_hKeyInputWnd, NULL);
-
-		AttachThreadInput(dwTargetThreadId, dwThreadId, TRUE);
-
-		SystemParametersInfo(SPI_GETFOREGROUNDLOCKTIMEOUT, 0, &dwBuf, 0);
-		SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, NULL, 0);
-
-		SetForegroundWindow(m_hTargetTopWnd);
-		Sleep(m_millisecSleepAfterKeyDown);
-
 		if (m_ctrl) {
-			VMVirtualKeyDown(m_hMouseInputWnd, VK_CONTROL, m_bUsePostMessageToSendKey);
+			VMVirtualKeyDown(m_hKeyInputWnd, VK_CONTROL, m_bUsePostMessageToSendKey);
 		}
 		if (m_alt) {
-			VMVirtualKeyDown(m_hMouseInputWnd, VK_MENU, m_bUsePostMessageToSendKey);
+			VMVirtualKeyDown(m_hKeyInputWnd, VK_MENU, m_bUsePostMessageToSendKey);
 		}
 		if (m_shift) {
-			VMVirtualKeyDown(m_hMouseInputWnd, VK_SHIFT, m_bUsePostMessageToSendKey);
+			VMVirtualKeyDown(m_hKeyInputWnd, VK_SHIFT, m_bUsePostMessageToSendKey);
 		}
-		SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, &dwBuf, 0);
-		AttachThreadInput(dwThreadId, dwTargetThreadId, FALSE);
-
+		if (!m_pCursor->SetTransparentCursor()) {
+			LogDebugMessage(Log_Error, _T("透明カーソルへの変更に失敗しています。"));
+		}
 		m_bSyskeyDown = IsModKeysDown();
-		if (!m_bSyskeyDown) {
-			TCHAR szError[BUFFER_SIZE];
-			_stprintf_s(szError, _countof(szError), _T("修飾キーが押されませんでした[タイムアウト]。") );
-			LogDebugMessage(Log_Error, szError);
-		}
+		//if (!m_bSyskeyDown) {
+		//	TCHAR szError[BUFFER_SIZE];
+		//	_stprintf_s(szError, _countof(szError), _T("修飾キーが押されませんでした[タイムアウト]。") );
+		//	LogDebugMessage(Log_Error, szError);
+		//}
 	}
 }
 
@@ -452,6 +481,7 @@ void ShowcaseController::ModKeyUp(void)
 		}
 		m_bSyskeyDown = FALSE;
 	}
+	m_pCursor->RestoreCursor();
 }
 
 

@@ -49,7 +49,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\Miscellaneous;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\VirtualMotion\VirtualMotion;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DKeysHook\I4C3DKeysHook;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DDriver\I4C3DDriver;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\RTTPlugin\RTTPlugin;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\Miscellaneous;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\VirtualMotion\VirtualMotion;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DKeysHook\I4C3DKeysHook;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DDriver\I4C3DDriver;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -67,7 +67,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\Miscellaneous;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\VirtualMotion\VirtualMotion;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DKeysHook\I4C3DKeysHook;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DDriver\I4C3DDriver;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\RTTPlugin\RTTPlugin;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\Miscellaneous;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\VirtualMotion\VirtualMotion;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DKeysHook\I4C3DKeysHook;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DDriver\I4C3DDriver;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -84,6 +84,7 @@
     <None Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\RTTPlugin\RTTPlugin\I4C3DCursor.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ShowcaseController.h" />
     <ClInclude Include="ShowcasePlugin.h" />
@@ -91,6 +92,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\RTTPlugin\RTTPlugin\I4C3DCursor.cpp" />
     <ClCompile Include="ShowcaseController.cpp" />
     <ClCompile Include="ShowcasePlugin.cpp" />
     <ClCompile Include="stdafx.cpp">

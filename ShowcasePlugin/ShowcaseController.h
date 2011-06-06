@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VirtualMotion.h"
+class I4C3DCursor;
 
 class ShowcaseController
 {
@@ -9,7 +10,7 @@ public:
 	~ShowcaseController(void);
 
 	BOOL Initialize(LPCSTR szBuffer, char* termination);
-	void Execute(LPCSTR szCommand, double deltaX, double deltaY);
+	void Execute(HWND hWnd, LPCSTR szCommand, double deltaX, double deltaY);
 	void ModKeyUp(void);
 
 private:
@@ -22,6 +23,7 @@ private:
 	BOOL InitializeModifierKeys(PCSTR szModifierKeys);
 	BOOL GetTargetChildWnd(void);
 	BOOL CheckTargetState(void);
+	void AdjustCursorPos(void);
 	void ModKeyDown(void);
 	BOOL IsModKeysDown(void);
 
@@ -39,9 +41,10 @@ private:
 	BOOL m_bSyskeyDown;
 	int m_DisplayWidth;
 	int m_DisplayHeight;
-	DWORD m_millisecSleepAfterKeyDown;
 	double m_fTumbleRate;
 	double m_fTrackRate;
 	double m_fDollyRate;
+
+	I4C3DCursor* m_pCursor;
 };
 

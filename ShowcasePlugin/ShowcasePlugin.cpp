@@ -1,5 +1,6 @@
 // ShowcasePlugin.cpp : アプリケーションのエントリ ポイントを定義します。
 //
+#define _WIN32_WINNT 0x0500	// 透明ウィンドウ作成に必要（#include <windows.h>より前）
 
 #include "stdafx.h"
 #include "ShowcasePlugin.h"
@@ -12,6 +13,10 @@
 #define MAX_LOADSTRING	100
 #define TIMER_ID		1
 
+const int g_x = 50;
+const int g_y = 50;
+static const int g_width	= 35;
+static const int g_height	= 35;
 static const int BUFFER_SIZE = 256;
 static const PCSTR COMMAND_INIT	= "init";
 static const PCSTR COMMAND_EXIT	= "exit";
@@ -28,7 +33,7 @@ BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
-static int AnalyzeMessage(LPCSTR szMessage, LPSTR szCommand, SIZE_T size, double* pDeltaX, double* pDeltaY, char cTermination);
+static int AnalyzeMessage(I4C3DUDPPacket* pPacket, HWND* pHWnd, LPSTR szCommand, SIZE_T size, double* pDeltaX, double* pDeltaY, char cTermination);
 
 static SOCKET InitializeController(HWND hWnd, USHORT uPort);
 static void UnInitializeController(SOCKET socketHandler);
@@ -55,16 +60,16 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	MyRegisterClass(hInstance);
 
-	//int argc = 0;
-	//LPTSTR *argv = NULL;
-	//argv = CommandLineToArgvW(GetCommandLine(), &argc);
-	//if (argc != 2) {
-	//	MessageBox(NULL, _T("[ERROR] 引数が足りません[例: ShowcasePlugin.exe 10001]。<ShowcasePlugin>"), szTitle, MB_OK | MB_ICONERROR);
-	//}
-	//g_uPort = static_cast<USHORT>(_wtoi(argv[1]));
-	//OutputDebugString(argv[1]);
-	//LocalFree(argv);
-	g_uPort = 10004;
+	int argc = 0;
+	LPTSTR *argv = NULL;
+	argv = CommandLineToArgvW(GetCommandLine(), &argc);
+	if (argc != 2) {
+		MessageBox(NULL, _T("[ERROR] 引数が足りません[例: ShowcasePlugin.exe 10001]。<ShowcasePlugin>"), szTitle, MB_OK | MB_ICONERROR);
+	}
+	g_uPort = static_cast<USHORT>(_wtoi(argv[1]));
+	OutputDebugString(argv[1]);
+	LocalFree(argv);
+	//g_uPort = 10004;
 
 	static WSAData wsaData;
 	WORD wVersion;
@@ -132,7 +137,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
 
-	wcex.style			= CS_HREDRAW | CS_VREDRAW;
+	wcex.style			= 0;
 	wcex.lpfnWndProc	= WndProc;
 	wcex.cbClsExtra		= 0;
 	wcex.cbWndExtra		= 0;
@@ -140,7 +145,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SHOWCASEPLUGIN));
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground	= (HBRUSH)(COLOR_WINDOW+1);
-	wcex.lpszMenuName	= MAKEINTRESOURCE(IDC_SHOWCASEPLUGIN);
+	wcex.lpszMenuName	= 0;
 	wcex.lpszClassName	= szWindowClass;
 	wcex.hIconSm		= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -163,8 +168,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    hInst = hInstance; // グローバル変数にインスタンス処理を格納します。
 
-   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+   RECT rect = {0};
+   SetRect(&rect, g_x, g_y, g_width, g_height);
+   AdjustWindowRectEx(&rect, WS_POPUP, FALSE, WS_EX_TOPMOST);
+
+   hWnd = CreateWindowEx(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, szWindowClass, szTitle, WS_POPUP,
+	   g_x, g_y, g_width, g_height, NULL, NULL, hInstance, NULL);
+   SetLayeredWindowAttributes(hWnd, 0, I4C3DAlpha, LWA_ALPHA);
 
    if (!hWnd)
    {
@@ -199,7 +209,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	static ShowcaseController controller;
 	static SOCKET socketHandler = INVALID_SOCKET;
-	char buffer[BUFFER_SIZE*4] = {0};
+	I4C3DUDPPacket packet = {0};
 	char szCommand[BUFFER_SIZE] = {0};
 	double deltaX = 0;
 	double deltaY = 0;
@@ -218,7 +228,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case MY_WINSOCKSELECT:
 		switch (WSAGETSELECTEVENT(lParam)) {
 		case FD_READ:
-			nBytes = recv(socketHandler, buffer, _countof(buffer), 0);
+			nBytes = recv(socketHandler, (char*)&packet, sizeof(packet), 0);
 			if (nBytes == SOCKET_ERROR) {
 				_stprintf_s(szError, _countof(szError), _T("recv() : %d <ShowcasePlugin>"), WSAGetLastError());
 				LogDebugMessage(Log_Error, szError);
@@ -226,16 +236,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			}
 
-			int scanCount = AnalyzeMessage(buffer, szCommand, _countof(szCommand), &deltaX, &deltaY, cTermination);
+			HWND hTargetWnd = 0;
+			int scanCount = AnalyzeMessage(&packet, &hTargetWnd, szCommand, _countof(szCommand), &deltaX, &deltaY, cTermination);
 			if (scanCount == 3) {
 				counter = 0;
-				controller.Execute(szCommand, deltaX, deltaY);
+
+				ShowWindow(hWnd, SW_SHOW);
+				UpdateWindow(hWnd);
+				controller.Execute(hTargetWnd, szCommand, deltaX, deltaY);
 				Sleep(1);
 				doCount = TRUE;
-
 			} else if (scanCount == 1) {
 				if (_strcmpi(szCommand, COMMAND_INIT) == 0) {
-					if (!controller.Initialize(buffer, &cTermination)) {
+					if (!controller.Initialize(packet.szCommand, &cTermination)) {
 						_stprintf_s(szError, _countof(szError), _T("Showcaseコントローラの初期化に失敗しています。"));
 						ReportError(szError);
 					}
@@ -250,9 +263,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_TIMER:
 		if (doCount) {
 			counter += timer_interval;
-			if (300 < counter) {
+			if (cancelKeyDownMillisec < counter) {
 				controller.ModKeyUp();
 				doCount = FALSE;
+				ShowWindow(hWnd, SW_HIDE);
+				UpdateWindow(hWnd);
 			}
 		}
 		break;
@@ -358,16 +373,23 @@ void UnInitializeController(SOCKET socketHandler)
 	closesocket(socketHandler);
 }
 
-int AnalyzeMessage(LPCSTR szMessage, LPSTR szCommand, SIZE_T size, double* pDeltaX, double* pDeltaY, char cTermination)
+
+int AnalyzeMessage(I4C3DUDPPacket* pPacket, HWND* pHWnd, LPSTR szCommand, SIZE_T size, double* pDeltaX, double* pDeltaY, char cTermination)
 {
-	static char szFormat[BUFFER_SIZE/4] = {0};
+	static char szFormat[BUFFER_SIZE] = {0};
 	int scanCount = 0;
 	double deltaX = 0., deltaY = 0.;
+
+	if (pHWnd != NULL) {
+		*pHWnd = (HWND)(pPacket->hwnd[3] << 24 | pPacket->hwnd[2] << 16 | pPacket->hwnd[1] << 8 | pPacket->hwnd[0]);
+	}
+
 	if (szFormat[0] == '\0') {
 		sprintf_s(szFormat, sizeof(szFormat), "%%s %%lf %%lf%c", cTermination);
 	}
 	
-	scanCount = sscanf_s(szMessage, szFormat, szCommand, size, &deltaX, &deltaY);
+	scanCount = sscanf_s(pPacket->szCommand, szFormat, szCommand, size, &deltaX, &deltaY);
+
 	if (3 <= scanCount) {
 		*pDeltaX = deltaX;
 		*pDeltaY = deltaY;
