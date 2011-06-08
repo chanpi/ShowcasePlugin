@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VirtualMotion.h"
+class I4C3DCursor;
 
 class ShowcaseController
 {
@@ -43,5 +44,7 @@ private:
 	double m_fTumbleRate;
 	double m_fTrackRate;
 	double m_fDollyRate;
+
+	I4C3DCursor* m_pCursor;
 };
 

@@ -2,9 +2,12 @@
 #include "ShowcaseController.h"
 #include "I4C3DKeysHook.h"
 #include "I4C3DCommon.h"
+#include "I4C3DCursor.h"
 #include "Miscellaneous.h"
 
 static const int BUFFER_SIZE = 256;
+extern const int g_x;
+extern const int g_y;
 
 static BOOL CALLBACK EnumChildProc(HWND hWnd, LPARAM lParam);
 static const PCTSTR g_szChildWindowTitle	= _T("AW_VIEWER");
@@ -35,12 +38,15 @@ ShowcaseController::ShowcaseController(void)
 	
 	MakeHook(NULL);
 	m_hKeyInputWnd	= NULL;
+	m_pCursor = new I4C3DCursor;
 }
 
 ShowcaseController::~ShowcaseController(void)
 {
 	ModKeyUp();
 	UnHook();
+	delete m_pCursor;
+	m_pCursor = NULL;
 }
 
 /**
@@ -204,6 +210,8 @@ void ShowcaseController::Execute(HWND hWnd, LPCSTR szCommand, double deltaX, dou
 
 	//ShowWindow(m_hTargetParentWnd, SW_SHOWMAXIMIZED);
 
+	SetCursorPos(51, 51);
+
 	if (_strcmpi(szCommand, COMMAND_TUMBLE) == 0) {
 		ModKeyDown();
 		if (m_bSyskeyDown) {
@@ -262,9 +270,11 @@ void ShowcaseController::TumbleExecute(int deltaX, int deltaY)
 
 		AdjustCursorPos();
 		m_mouseMessage.dragStartPos		= m_currentPos;
-		m_currentPos.x					+= deltaX;
-		m_currentPos.y					+= deltaY;
-		m_mouseMessage.dragEndPos		= m_currentPos;
+		m_mouseMessage.dragEndPos.x		= m_currentPos.x + deltaX;
+		m_mouseMessage.dragEndPos.y		= m_currentPos.y + deltaY;
+		//m_currentPos.x					+= deltaX;
+		//m_currentPos.y					+= deltaY;
+		//m_mouseMessage.dragEndPos		= m_currentPos;
 
 		VMMouseClick(&m_mouseMessage, FALSE);
 	}
@@ -303,9 +313,11 @@ void ShowcaseController::TrackExecute(int deltaX, int deltaY)
 
 		AdjustCursorPos();
 		m_mouseMessage.dragStartPos		= m_currentPos;
-		m_currentPos.x					+= deltaX;
-		m_currentPos.y					+= deltaY;
-		m_mouseMessage.dragEndPos		= m_currentPos;
+		m_mouseMessage.dragEndPos.x		= m_currentPos.x + deltaX;
+		m_mouseMessage.dragEndPos.y		= m_currentPos.y + deltaY;
+		//m_currentPos.x					+= deltaX;
+		//m_currentPos.y					+= deltaY;
+		//m_mouseMessage.dragEndPos		= m_currentPos;
 
 		VMMouseClick(&m_mouseMessage, FALSE);
 	}
@@ -345,9 +357,11 @@ void ShowcaseController::DollyExecute(int deltaX, int deltaY)
 
 		AdjustCursorPos();
 		m_mouseMessage.dragStartPos		= m_currentPos;
-		m_currentPos.x					+= deltaX;
-		m_currentPos.y					+= deltaY;
-		m_mouseMessage.dragEndPos		= m_currentPos;
+		m_mouseMessage.dragEndPos.x		= m_currentPos.x + deltaX;
+		m_mouseMessage.dragEndPos.y		= m_currentPos.y + deltaY;
+		//m_currentPos.x					+= deltaX;
+		//m_currentPos.y					+= deltaY;
+		//m_mouseMessage.dragEndPos		= m_currentPos;
 
 		VMMouseClick(&m_mouseMessage, FALSE);
 	}
@@ -432,6 +446,9 @@ void ShowcaseController::ModKeyDown(void)
 		if (m_shift) {
 			VMVirtualKeyDown(m_hKeyInputWnd, VK_SHIFT, m_bUsePostMessageToSendKey);
 		}
+		if (!m_pCursor->SetTransparentCursor()) {
+			LogDebugMessage(Log_Error, _T("透明カーソルへの変更に失敗しています。"));
+		}
 		m_bSyskeyDown = IsModKeysDown();
 		//if (!m_bSyskeyDown) {
 		//	TCHAR szError[BUFFER_SIZE];
@@ -464,6 +481,7 @@ void ShowcaseController::ModKeyUp(void)
 		}
 		m_bSyskeyDown = FALSE;
 	}
+	m_pCursor->RestoreCursor();
 }
 
 
