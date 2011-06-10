@@ -17,7 +17,8 @@ const int g_x = 50;
 const int g_y = 50;
 static const int g_width	= 35;
 static const int g_height	= 35;
-static const int BUFFER_SIZE = 256;
+
+const int BUFFER_SIZE = 256;
 static const PCSTR COMMAND_INIT	= "init";
 static const PCSTR COMMAND_EXIT	= "exit";
 
@@ -65,11 +66,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	argv = CommandLineToArgvW(GetCommandLine(), &argc);
 	if (argc != 2) {
 		MessageBox(NULL, _T("[ERROR] 引数が足りません[例: ShowcasePlugin.exe 10001]。<ShowcasePlugin>"), szTitle, MB_OK | MB_ICONERROR);
+		LocalFree(argv);
+		CleanupMutex();
+		return EXIT_FAILURE;
 	}
 	g_uPort = static_cast<USHORT>(_wtoi(argv[1]));
 	OutputDebugString(argv[1]);
 	LocalFree(argv);
-	//g_uPort = 10004;
 
 	static WSAData wsaData;
 	WORD wVersion;
@@ -79,25 +82,33 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	nResult = WSAStartup(wVersion, &wsaData);
 	if (nResult != 0) {
 		MessageBox(NULL, _T("[ERROR] Initialize Winsock."), szTitle, MB_OK | MB_ICONERROR);
-		return FALSE;
+		CleanupMutex();
+		return EXIT_FAILURE;
 	}
 	if (wsaData.wVersion != wVersion) {
 		MessageBox(NULL, _T("[ERROR] Winsock バージョン."), szTitle, MB_OK | MB_ICONERROR);
 		WSACleanup();
-		return FALSE;
+		CleanupMutex();
+		return EXIT_FAILURE;
 	}
 
+	LOG_LEVEL logLevel = Log_Error;
 #if _DEBUG || DEBUG
-	LogFileOpenW("Showcase", Log_Debug);
-	LogDebugMessage(Log_Debug, _T("Showcase log file opened."));
+	logLevel = Log_Debug;
 #else
-	LogFileOpenW("Showcase", Log_Error);
-	//LogDebugMessage(Log_Error, _T("TEST!!!!!!!!!!! Showcase log file opened."));
+	logLevel = Log_Error;
 #endif
+	if (!LogFileOpenW("Showcase", logLevel)) {
+		ReportError(_T("Showcaseのログは出力されません。"));
+	}
+	LogDebugMessage(Log_Debug, _T("Showcase log file opened."));
 
 	// アプリケーションの初期化を実行します:
 	if (!InitInstance (hInstance, nCmdShow))
 	{
+		WSACleanup();
+		CleanupMutex();
+		LogFileCloseW();
 		return FALSE;
 	}
 
@@ -305,6 +316,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case MY_I4C3DDESTROY:
+	case WM_CLOSE:
 	case WM_DESTROY:
 		UnInitializeController(socketHandler);
 		PostQuitMessage(0);

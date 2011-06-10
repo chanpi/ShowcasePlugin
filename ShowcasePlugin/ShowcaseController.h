@@ -22,7 +22,7 @@ private:
 
 	BOOL InitializeModifierKeys(PCSTR szModifierKeys);
 	BOOL GetTargetChildWnd(void);
-	BOOL CheckTargetState(void);
+	//BOOL CheckTargetState(void);
 	void AdjustCursorPos(void);
 	void ModKeyDown(void);
 	BOOL IsModKeysDown(void);
