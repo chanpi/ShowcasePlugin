@@ -49,12 +49,12 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\RTTPlugin\RTTPlugin;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\Miscellaneous;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\VirtualMotion\VirtualMotion;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DKeysHook\I4C3DKeysHook;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DDriver\I4C3DDriver;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\RTTPlugin\RTTPlugin;$(SolutionDir)\..\Miscellaneous;$(SolutionDir)\..\VirtualMotion\VirtualMotion;$(SolutionDir)\..\I4C3DKeysHook\I4C3DKeysHook;$(SolutionDir)\..\I4C3DDriver\I4C3DDriver;$(SolutionDir)\..\I4C3DLauncher\I4C3DLauncher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DKeysHook\Release;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\Miscellaneous\Release;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DDriver\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\..\I4C3DDriver\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>ws2_32.lib;I4C3DKeysHook.lib;VirtualMotion.lib;Miscellaneous.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -67,14 +67,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\RTTPlugin\RTTPlugin;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\Miscellaneous;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\VirtualMotion\VirtualMotion;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DKeysHook\I4C3DKeysHook;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DDriver\I4C3DDriver;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\RTTPlugin\RTTPlugin;$(SolutionDir)\..\Miscellaneous;$(SolutionDir)\..\VirtualMotion\VirtualMotion;$(SolutionDir)\..\I4C3DKeysHook\I4C3DKeysHook;$(SolutionDir)\..\I4C3DDriver\I4C3DDriver;$(SolutionDir)\..\I4C3DLauncher\I4C3DLauncher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DKeysHook\Release;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\Miscellaneous\Release;C:\Documents and Settings\Administrator\My Documents\Visual Studio 2010\Projects\I4C3DDriver\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\..\I4C3DDriver\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>ws2_32.lib;I4C3DKeysHook.lib;VirtualMotion.lib;Miscellaneous.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -84,7 +84,9 @@
     <None Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\RTTPlugin\RTTPlugin\CADController.h" />
     <ClInclude Include="..\..\RTTPlugin\RTTPlugin\I4C3DCursor.h" />
+    <ClInclude Include="..\..\RTTPlugin\RTTPlugin\MacroPlugin.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ShowcaseController.h" />
     <ClInclude Include="ShowcasePlugin.h" />
@@ -92,7 +94,9 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\RTTPlugin\RTTPlugin\CADController.cpp" />
     <ClCompile Include="..\..\RTTPlugin\RTTPlugin\I4C3DCursor.cpp" />
+    <ClCompile Include="..\..\RTTPlugin\RTTPlugin\MacroPlugin.cpp" />
     <ClCompile Include="ShowcaseController.cpp" />
     <ClCompile Include="ShowcasePlugin.cpp" />
     <ClCompile Include="stdafx.cpp">

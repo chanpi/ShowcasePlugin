@@ -120,7 +120,7 @@ BOOL ShowcaseController::InitializeModifierKeys(PCSTR szModifierKeys)
 		char szKey[BUFFER_SIZE] = {0};
 		pType = strchr(szModifierKeys, '+');
 		if (pType != NULL) {
-			strncpy_s(szKey, _countof(szKey), szModifierKeys, pType-szModifierKeys+1);
+			strncpy_s(szKey, _countof(szKey), szModifierKeys, pType-szModifierKeys);
 			szModifierKeys = pType+1;
 		} else {
 			strcpy_s(szKey, _countof(szKey), szModifierKeys);
@@ -240,14 +240,8 @@ void ShowcaseController::Execute(HWND hWnd, LPCSTR szCommand, double deltaX, dou
 		}
 
 	} else {
-//#if _UNICODE || UNICODE
-//		TCHAR wszCommand[BUFFER_SIZE] = {0};
-//		MultiByteToWideChar(CP_ACP, 0, szCommand, -1, wszCommand, _countof(wszCommand));
-//		ModKeyUp();
-//		HotkeyExecute(pContext, wszCommand);
-//#else
-//		pContext->pController->HotkeyExecute(lpszCommand);
-//#endif
+		ModKeyUp();
+		PlayMacro(szCommand, m_hKeyInputWnd, m_bUsePostMessageToSendKey);
 	}
 }
 
