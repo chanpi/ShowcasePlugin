@@ -3,9 +3,16 @@
 #include "I4C3DKeysHook.h"
 #include "I4C3DCommon.h"
 #include "I4C3DCursor.h"
-#include "Miscellaneous.h"
+#include "Misc.h"
+#include "SharedConstants.h"
 #include <math.h>
 #include <float.h>
+
+#if UNICODE || _UNICODE
+static LPCTSTR g_FILE = __FILEW__;
+#else
+static LPCTSTR g_FILE = __FILE__;
+#endif
 
 extern const int BUFFER_SIZE = 256;
 extern const int g_x = 50;
@@ -157,7 +164,7 @@ BOOL ShowcaseController::GetTargetChildWnd(void)
 	m_hMouseInputWnd = NULL;
 	EnumChildWindows(m_hTargetTopWnd, EnumChildProc, (LPARAM)&m_hMouseInputWnd);
 	if (m_hMouseInputWnd == NULL) {
-		LogDebugMessage(Log_Error, _T("マウス入力ウィンドウが取得できません。<ShowcaseController::GetTargetChildWnd>"));
+		LoggingMessage(Log_Error, _T(MESSAGE_ERROR_WINDOW_MISSING), GetLastError(), g_FILE, __LINE__);
 		return FALSE;
 	}
 
@@ -430,7 +437,7 @@ void ShowcaseController::ModKeyDown(void)
 			VMVirtualKeyDown(m_hKeyInputWnd, VK_SHIFT, m_bUsePostMessageToSendKey);
 		}
 		if (!m_pCursor->SetTransparentCursor()) {
-			LogDebugMessage(Log_Error, _T("透明カーソルへの変更に失敗しています。"));
+			LoggingMessage(Log_Error, _T(MESSAGE_ERROR_CURSOR_CHANGE), GetLastError(), g_FILE, __LINE__);
 		}
 		m_bSyskeyDown = IsModKeysDown();
 		//if (!m_bSyskeyDown) {
