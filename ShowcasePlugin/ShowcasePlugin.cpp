@@ -44,6 +44,7 @@ static const PCTSTR g_szExecutableOption	= _T("-run");
 HINSTANCE hInst;								// 現在のインターフェイス
 TCHAR szTitle[MAX_LOADSTRING];					// タイトル バーのテキスト
 TCHAR szWindowClass[MAX_LOADSTRING];			// メイン ウィンドウ クラス名
+TCHAR g_szCursorFilePath[MAX_PATH] = {0};
 static USHORT g_uPort = 0;
 
 // このコード モジュールに含まれる関数の宣言を転送します:
@@ -80,7 +81,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #else
 	logLevel = Log_Error;
 #endif
-	if (!LogFileOpenW(SHARED_LOG_FILE_NAME, logLevel)) {
+	if (!LogFileOpenW(SHARED_LOG_FILE_DIRECTORY, SHARED_LOG_FILE_NAME, logLevel)) {
 	}
 
 	LoggingMessage(Log_Debug, _T(MESSAGE_DEBUG_LOG_OPEN), GetLastError(), g_FILE, __LINE__);
@@ -88,7 +89,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	int argc = 0;
 	LPTSTR *argv = NULL;
 	argv = CommandLineToArgvW(GetCommandLine(), &argc);
-	if (argc < 4) {
+	if (argc < 5) {
 		LoggingMessage(Log_Error, _T(MESSAGE_ERROR_PLUGIN_ARGUMENT), GetLastError(), g_FILE, __LINE__);
 		LocalFree(argv);
 		LogFileCloseW();
@@ -104,7 +105,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		return result;
 	}
 
-	if (0 != _tcsicmp(argv[3], g_szExecutableOption)) {
+	if (0 != _tcsicmp(argv[4], g_szExecutableOption)) {
 		LoggingMessage(Log_Error, _T(MESSAGE_ERROR_PLUGIN_OPTION), GetLastError(), g_FILE, __LINE__);
 		LocalFree(argv);
 		LogFileCloseW();
@@ -113,11 +114,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	g_uPort = static_cast<USHORT>(_wtoi(argv[2]));
 	OutputDebugString(argv[2]);
+
+	_tcscpy_s(g_szCursorFilePath, _countof(g_szCursorFilePath), argv[3]);
 	LocalFree(argv);
 
-	static WSAData wsaData;
-	WORD wVersion;
-	int nResult;
+	static WSAData wsaData = {0};
+	WORD wVersion = 0;
+	int nResult = 0;
 
 	wVersion = MAKEWORD(2,2);
 	nResult = WSAStartup(wVersion, &wsaData);
@@ -206,7 +209,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //        この関数で、グローバル変数でインスタンス ハンドルを保存し、
 //        メイン プログラム ウィンドウを作成および表示します。
 //
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+BOOL InitInstance(HINSTANCE hInstance, int /*nCmdShow*/)
 {
    HWND hWnd;
 
@@ -363,6 +366,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case MY_I4C3DDESTROY:
 	case WM_CLOSE:
 	case WM_DESTROY:
+		controller.CleanupMacro();
 		UnInitializeController(socketHandler);
 		PostQuitMessage(0);
 		break;
@@ -394,8 +398,8 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 SOCKET InitializeController(HWND hWnd, USHORT uPort)
 {
-	SOCKET socketHandler;
-	SOCKADDR_IN address;
+	SOCKET socketHandler = INVALID_SOCKET;
+	SOCKADDR_IN address = {0};
 	int nResult = 0;
 
 	socketHandler = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);

@@ -25,6 +25,8 @@ const PCSTR COMMAND_TUMBLE	= "tumble";
 const PCSTR COMMAND_TRACK	= "track";
 const PCSTR COMMAND_DOLLY	= "dolly";
 
+extern TCHAR g_szCursorFilePath[];
+
 ShowcaseController::ShowcaseController(void)
 {
 	m_hTargetTopWnd		= NULL;
@@ -91,8 +93,8 @@ BOOL ShowcaseController::Initialize(LPCSTR szBuffer, char* termination)
 	}
 
 	{
-		TCHAR szBuf[32];
-		_stprintf_s(szBuf, 32, _T("tum:%.2f, tra:%.2f dol:%.2f\n"), m_fTumbleRate, m_fTrackRate, m_fDollyRate);
+		TCHAR szBuf[64] = {0};
+		_stprintf_s(szBuf, _countof(szBuf), _T("tum:%.2f, tra:%.2f dol:%.2f\n"), m_fTumbleRate, m_fTrackRate, m_fDollyRate);
 		OutputDebugString(szBuf);
 	}
 
@@ -200,7 +202,7 @@ void ShowcaseController::AdjustCursorPos(void)
 	POINT tmpCurrentPos = m_currentPos;
 	ClientToScreen(m_hMouseInputWnd, &tmpCurrentPos);
 
-	RECT windowRect;
+	RECT windowRect = {0};
 	GetWindowRect(m_hMouseInputWnd, &windowRect);
 	if (WindowFromPoint(tmpCurrentPos) != m_hMouseInputWnd ||
 		tmpCurrentPos.x < windowRect.left+200 || windowRect.right-200 < tmpCurrentPos.x ||
@@ -210,7 +212,7 @@ void ShowcaseController::AdjustCursorPos(void)
 				m_mouseMessage.dragButton = DragNONE;
 			}
 
-			RECT rect;
+			RECT rect = {0};
 			GetClientRect(m_hMouseInputWnd, &rect);
 			m_currentPos.x = rect.left + (rect.right - rect.left) / 2;
 			m_currentPos.y = rect.top + (rect.bottom - rect.top) / 2;
@@ -436,7 +438,7 @@ void ShowcaseController::ModKeyDown(void)
 		if (m_shift) {
 			VMVirtualKeyDown(m_hKeyInputWnd, VK_SHIFT, m_bUsePostMessageToSendKey);
 		}
-		if (!m_pCursor->SetTransparentCursor()) {
+		if (!m_pCursor->SetTransparentCursor(g_szCursorFilePath)) {
 			LoggingMessage(Log_Error, _T(MESSAGE_ERROR_CURSOR_CHANGE), GetLastError(), g_FILE, __LINE__);
 		}
 		m_bSyskeyDown = IsModKeysDown();
@@ -477,7 +479,7 @@ void ShowcaseController::ModKeyUp(void)
 
 BOOL CALLBACK EnumChildProc(HWND hWnd, LPARAM lParam)
 {
-	TCHAR szClassName[BUFFER_SIZE];
+	TCHAR szClassName[BUFFER_SIZE] = {0};
 	GetClassName(hWnd, szClassName, _countof(szClassName));
 
 	if (!_tcsicmp(g_szChildWindowTitle, szClassName)) {
